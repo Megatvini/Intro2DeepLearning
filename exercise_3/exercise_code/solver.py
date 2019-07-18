@@ -73,6 +73,8 @@ class Solver(object):
                 optim.zero_grad()
                 model.train()
                 x_train, y_train = cur_batch
+                x_train = x_train.to(device)
+                y_train = y_train.to(device)
                 loss = self.loss_func(model(x_train), y_train)
                 loss.backward()
                 optim.step()
@@ -82,10 +84,10 @@ class Solver(object):
 
             model.eval()
             with torch.no_grad():
-                val_losses = [self.loss_func(model(x_val), y_val) for x_val, y_val in val_loader]
+                val_losses = [self.loss_func(model(x_val.to(device)), y_val.to(device)) for x_val, y_val in val_loader]
                 val_loss = sum(val_losses) / len(val_losses)
 
-                predictions = [(torch.max(model(x_val), 1)[1] == y_val)[y_val >= 0].numpy().mean()
+                predictions = [(torch.max(model(x_val.to(device)), 1)[1] == y_val.to(device))[y_val.to(device) >= 0].cpu().numpy().mean()
                                for x_val, y_val in val_loader]
                 val_accuracy = np.mean(predictions)
 
