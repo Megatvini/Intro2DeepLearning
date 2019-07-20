@@ -13,6 +13,10 @@ class Lambda(nn.Module):
         return self.func(x)
 
 
+def out(x):
+    return x['out']
+
+
 class SegmentationNN(nn.Module):
 
     def __init__(self, num_classes=23):
@@ -22,14 +26,16 @@ class SegmentationNN(nn.Module):
         #                             YOUR CODE                                #
         ########################################################################
 
-        resnet = models.segmentation.fcn_resnet50(pretrained=False)
-        for p in resnet.parameters():
-            p.required_grad = False
+        resnet = models.segmentation.fcn_resnet101(num_classes=num_classes, pretrained=False)
+        # for p in resnet.parameters():
+        #     p.required_grad = False
 
         self.model = nn.Sequential(
             resnet,
-            Lambda(lambda x: x['out']),
-            nn.Conv2d(21, num_classes, 1)
+            Lambda(out),
+            nn.Conv2d(21, 128, 3, padding=1),
+            nn.Conv2d(128, 128, 3, padding=1),
+            nn.Conv2d(128, num_classes, 3, padding=1)
         )
         #
         # self.model = models.segmentation.fcn_resnet50(num_classes=num_classes)
