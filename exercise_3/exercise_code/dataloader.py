@@ -3,6 +3,8 @@ import matplotlib.image as mpimg
 import pandas as pd
 import os
 import numpy as np
+from torchvision.transforms import transforms
+
 from .data_utils import get_image, get_keypoints
 
 
@@ -21,6 +23,7 @@ class FacialKeypointsDataset(Dataset):
         self.key_pts_frame = pd.read_csv(csv_file)
         self.key_pts_frame.dropna(inplace=True)
         self.key_pts_frame.reset_index(drop=True, inplace=True)
+        self.key_pts_frame = self.key_pts_frame.head(20)
         self.transform = transform
 
     def __len__(self):

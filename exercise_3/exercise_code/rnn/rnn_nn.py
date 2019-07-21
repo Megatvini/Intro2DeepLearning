@@ -1,8 +1,10 @@
 import torch
 import torch.nn as nn
+from torch import sigmoid, tanh
+
 
 class RNN(nn.Module):
-    def __init__(self, input_size=1 , hidden_size=20, activation="tanh"):
+    def __init__(self, input_size=1, hidden_size=20, activation="tanh"):
         super(RNN, self).__init__()
         """
         Inputs:
@@ -16,11 +18,14 @@ class RNN(nn.Module):
         # as your linear layers.                                                   #
         # Initialse h as 0 if these values are not given.                          #
         ############################################################################
-        pass
+        self.W = nn.Linear(hidden_size, hidden_size)
+        self.V = nn.Linear(input_size, hidden_size)
+
+        self.activation = nn.Tanh()
+        self.hidden_size = hidden_size
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
-        
 
     def forward(self, x, h=None):
         """
@@ -36,11 +41,18 @@ class RNN(nn.Module):
         ############################################################################
         #                                YOUR CODE                                 #
         ############################################################################
-        pass
+        seq_len, batch_size, input_size = x.size()
+        if h is None:
+            h = torch.zeros(batch_size, self.hidden_size)
+
+        for i in range(seq_len):
+            z = self.V(x[i]) + self.W(h)
+            h = self.activation(z)
+            h_seq.append(h)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
-        return h_seq , h
+        return torch.stack(h_seq), h
     
     
 class LSTM(nn.Module):
@@ -52,8 +64,17 @@ class LSTM(nn.Module):
     # as your linear layers.                                                   #
     # Initialse h and c as 0 if these values are not given.                    #
     ############################################################################
-        pass
-       
+        self.Wf = nn.Linear(input_size, hidden_size)
+        self.Uf = nn.Linear(hidden_size, hidden_size)
+        self.Wi = nn.Linear(input_size, hidden_size)
+        self.Ui = nn.Linear(hidden_size, hidden_size)
+        self.Wo = nn.Linear(input_size, hidden_size)
+        self.Uo = nn.Linear(hidden_size, hidden_size)
+        self.Wc = nn.Linear(input_size, hidden_size)
+        self.Uc = nn.Linear(hidden_size, hidden_size)
+        self.hidden_size = hidden_size
+
+
     def forward(self, x, h=None , c=None):
         """
         Inputs:
@@ -66,11 +87,30 @@ class LSTM(nn.Module):
         - h: Final hidden vetor of sequence(1, batch_size, hidden_size)
         - c: Final cell state vetor of sequence(1, batch_size, hidden_size)
         """
-        pass
+
+        seq_len, batch_size, input_size = x.size()
+
+        if h is None:
+            h = torch.zeros(batch_size, self.hidden_size)
+
+        if c is None:
+            c = torch.zeros(batch_size, self.hidden_size)
+
+        h_seq = []
+
+        for t in range(seq_len):
+            xt = x[t]
+            ft = sigmoid(self.Wf(xt) + self.Uf(h))
+            it = sigmoid(self.Wi(xt) + self.Ui(h))
+            ot = sigmoid(self.Wo(xt) + self.Uo(h))
+            c = ft * c + it * tanh(self.Wc(xt) + self.Uc(h))
+            h = ot * tanh(c)
+            h_seq.append(h)
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
-        return h_seq , (h, c)
+        return torch.stack(h_seq), (h, c)
     
 
 class RNN_Classifier(torch.nn.Module):
@@ -98,16 +138,22 @@ class RNN_Classifier(torch.nn.Module):
         print('Saving model... %s' % path)
         torch.save(self, path)
 
+
 class LSTM_Classifier(torch.nn.Module):
-    def __init__(self,classes=10, input_size=28 , hidden_size=128):
+    def __init__(self,classes=10, input_size=28, hidden_size=128):
         super(LSTM_Classifier, self).__init__()
     ############################################################################
     #  TODO: Build a LSTM classifier                                           #
     ############################################################################
-        pass
-    
+        self.LSTM = LSTM(input_size, hidden_size)
+        self.fc = nn.Linear(hidden_size, classes)
+
     def forward(self, x):
-        pass
+        h_seq, last_state = self.LSTM(x)
+        h, c = last_state
+        x = self.fc(h)
+        return x
+
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -121,4 +167,3 @@ class LSTM_Classifier(torch.nn.Module):
         """
         print('Saving model... %s' % path)
         torch.save(self, path)
-        
